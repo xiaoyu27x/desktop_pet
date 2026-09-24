@@ -1,0 +1,121 @@
+import sys
+import json
+import os
+import keyboard  # 用于全局监听
+from PyQt5.QtWidgets import (
+    QApplication, QDialog, QVBoxLayout, QHBoxLayout,
+    QLabel, QPushButton, QMessageBox
+)
+from PyQt5.QtCore import Qt, pyqtSignal
+
+# 快捷键配置文件路径
+CONFIG_FILE = "shortcut_config.json"
+
+
+class ShortcutRecordDialog(QDialog):
+    """专门用于录制快捷键的对话框"""
+    finished_recording = pyqtSignal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("录制快捷键")
+        self.setFixedSize(300, 150)
+        self.setWindowModality(Qt.ApplicationModal)  # 阻塞主窗口
+
+        self.layout = QVBoxLayout(self)
+        self.label = QLabel("请直接按下键盘组合键...\n(例如: Ctrl+Shift+A)", self)
+        self.label.setAlignment(Qt.AlignCenter)
+        self.layout.addWidget(self.label)
+
+        self.current_keys = set()
+        self.recorded_shortcut = ""
+
+        # 提示按钮
+        self.btn_cancel = QPushButton("取消", self)
+        self.btn_cancel.clicked.connect(self.reject)
+        self.layout.addWidget(self.btn_cancel)
+
+    def keyPressEvent(self, event):
+        """核心：捕捉按键并转换为字符串"""
+        key = event.key()
+
+        # 排除掉单独按下修饰键的情况，只记录最终组合
+        modifiers = event.modifiers()
+        key_list = []
+
+        if modifiers & Qt.ControlModifier: key_list.append("ctrl")
+        if modifiers & Qt.ShiftModifier: key_list.append("shift")
+        if modifiers & Qt.AltModifier: key_list.append("alt")
+
+        # 获取普通按键的名称
+        key_text = event.text().lower()
+        if not key_text:  # 处理非字符键如 F1, Space 等
+            if key == Qt.Key_Space:
+                key_text = "space"
+            elif key >= Qt.Key_F1 and key <= Qt.Key_F12:
+                key_text = f"f{key - Qt.Key_F1 + 1}"
+
+        if key_text and key_text not in ["", "\r", "\n", "\t"]:
+            if key_text not in key_list:
+                key_list.append(key_text)
+
+            self.recorded_shortcut = "+".join(key_list)
+            self.finished_recording.emit(self.recorded_shortcut)
+            self.accept()
+
+
+class ShortcutSettingUI(QDialog):
+    """主设置界面"""
+
+    def __init__(self, current_shortcut="ctrl+shift+a"):
+        super().__init__()
+        self.setWindowTitle("快捷键自定义")
+        self.resize(350, 200)
+        self.current_shortcut = current_shortcut
+
+        layout = QVBoxLayout(self)
+
+        self.info_label = QLabel(f"当前呼叫热键: <b>{self.current_shortcut}</b>")
+        self.info_label.setStyleSheet("font-size: 14px; margin: 10px;")
+        layout.addWidget(self.info_label)
+
+        btn_layout = QHBoxLayout()
+        self.btn_record = QPushButton("点击设定新快捷键")
+        self.btn_record.clicked.connect(self.start_recording)
+        self.btn_save = QPushButton("保存并应用")
+        self.btn_save.clicked.connect(self.save_and_close)
+
+        btn_layout.addWidget(self.btn_record)
+        btn_layout.addWidget(self.btn_save)
+        layout.addLayout(btn_layout)
+
+    def start_recording(self):
+        dlg = ShortcutRecordDialog(self)
+        dlg.finished_recording.connect(self.update_shortcut_display)
+        dlg.exec_()
+
+    def update_shortcut_display(self, new_key):
+        self.current_shortcut = new_key
+        self.info_label.setText(f"当前呼叫热键: <b>{self.current_shortcut}</b>")
+
+    def save_and_close(self):
+        # 保存到本地 JSON
+        with open(CONFIG_FILE, "w") as f:
+            json.dump({"shortcut": self.current_shortcut}, f)
+        QMessageBox.information(self, "成功", f"热键已保存为: {self.current_shortcut}")
+        self.accept()
+
+
+# --- 测试运行代码 ---
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+
+    # 模拟读取配置
+    saved_key = "ctrl+shift+a"
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, "r") as f:
+            saved_key = json.load(f).get("shortcut", saved_key)
+
+    window = ShortcutSettingUI(saved_key)
+    window.show()
+    sys.exit(app.exec_())

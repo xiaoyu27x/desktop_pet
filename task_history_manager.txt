@@ -1,0 +1,30 @@
+import json
+import os
+from datetime import datetime
+
+class TaskHistoryManager:
+    def __init__(self, filename="task_history.json"):
+        self.filename = filename
+
+    def record_launch(self, task_name, path):
+        """记录启动历史"""
+        history = self.load_history()
+        record = {
+            "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "task_name": task_name,
+            "path": path,
+            "status": "success" if os.path.exists(path) else "failed_path_missing"
+        }
+        history.append(record)
+        with open(self.filename, 'w', encoding='utf-8') as f:
+            json.dump(history, f, ensure_ascii=False, indent=4)
+
+    def load_history(self):
+        if os.path.exists(self.filename):
+            with open(self.filename, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return []
+
+    def validate_path(self, path):
+        """判断路径是否存在"""
+        return os.path.exists(path)

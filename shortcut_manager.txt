@@ -1,0 +1,17 @@
+import json
+import os
+
+class ShortcutManager:
+    def __init__(self, filename="shortcut_config.json"):
+        self.filename = filename
+        self.default_shortcut = "ctrl+shift+a"
+
+    def save_shortcut(self, key_string):
+        with open(self.filename, 'w') as f:
+            json.dump({"shortcut": key_string}, f)
+
+    def load_shortcut(self):
+        if os.path.exists(self.filename):
+            with open(self.filename, 'r') as f:
+                return json.load(f).get("shortcut", self.default_shortcut)
+        return self.default_shortcut

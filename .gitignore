@@ -1,0 +1,51 @@
+# Python 编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# 虚拟环境
+venv/
+ENV/
+env/
+
+# IDE 设置
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 用户个人配置文件（不应该提交）
+settings.json
+
+# 用户数据文件（不应该提交）
+*_config.json
+task_history.json
+backup_old/scheduled_tasks.json
+scheduled_tasks_v2.json
+shortcut_config.json
+music_playlist.json
+exchange_rates.db
+exchange_alerts.json
+exchange_rate.xlsx
+
+
+# 日志文件
+*_log.md
+development_log.md
+
+# 操作系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 测试文件
+test_*.py
+*_test.py
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
